@@ -17,6 +17,10 @@ embeddings = my_object['embeddings']
 def replace_words(sentence):
 
     my_dataset = [dictionary[word.lower()] for word in sentence.split() if word.lower() in dictionary]
+    num_replaced_words = 0
+
+    if len(my_dataset) == 0:
+        return sentence, num_replaced_words
 
     with tf.Session():
 
@@ -28,7 +32,6 @@ def replace_words(sentence):
         sim = similarity.eval()
 
     new_words = []
-    num_replaced_words = 0
 
     for old_word in sentence.split():
         close_word = None

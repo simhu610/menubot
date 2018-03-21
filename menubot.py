@@ -10,6 +10,7 @@ import cPickle
 import skipgram
 import cbow
 import random
+import create_sentence
 
 BOT_ID = "U561US9MJ"
 
@@ -139,6 +140,22 @@ def change_sentence(output):
         if response is not None:
             slack_client.api_call("chat.postMessage", channel=output['channel'], text=response, as_user=True)
 
+
+def _create_sentence(output):
+    if output['user'] != BOT_ID:
+        start_word = output['text']
+        start_word = start_word.split()
+        if len(start_word) == 1 and start_word[0].endswith('...'):
+            start_word = start_word[0][:-3]
+        elif len(start_word) == 2 and start_word[1] == '...':
+            start_word = start_word[0]
+        else:
+            return
+        response = create_sentence.create_sentence(start_word)
+        if response is not None:
+            slack_client.api_call("chat.postMessage", channel=output['channel'], text=response, as_user=True)
+
+
 def parse_slack_output(slack_rtm_output):
     """
         The Slack Real Time Messaging API is an events firehose.
@@ -156,6 +173,7 @@ def parse_slack_output(slack_rtm_output):
                 react(output)
                 react2(output)
                 change_sentence(output)
+                _create_sentence(output)
     return None, None
 
 if __name__ == "__main__":
@@ -176,7 +194,9 @@ if __name__ == "__main__":
             try:
                 command, channel = parse_slack_output(slack_rtm_output)
             except:
-                print "Unexpected error in parse_slack_output:", sys.exc_info()[0]
+                print "Unexpected error in parse_slack_output"
+                import traceback
+                traceback.print_exc()
             if command and channel:
                 handle_command(command, channel)
             time.sleep(READ_WEBSOCKET_DELAY)
