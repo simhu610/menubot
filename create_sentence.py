@@ -14,6 +14,15 @@ embeddings = my_object['embeddings']
 weights = my_object['weights']
 biases = my_object['biases']
 
+graph = tf.Graph()
+with graph.as_default(), tf.device('/cpu:0'):
+    input = tf.placeholder(tf.int32, shape=[1])
+    input_embed = tf.nn.embedding_lookup(embeddings, input)
+    res = tf.matmul(weights, tf.transpose(input_embed))
+    res = tf.reshape(res, [res.shape[0]]) + biases
+    k = 10
+    _, predictions = tf.nn.top_k(res, k=k)
+
 
 def create_sentence(start_word):
 
@@ -27,15 +36,11 @@ def create_sentence(start_word):
     while True:
         used.append(word)
 
-        with tf.Session():
-            input_embed = tf.nn.embedding_lookup(embeddings, [word])
-            res = tf.matmul(weights, tf.transpose(input_embed))
-            res = tf.reshape(res, [res.shape[0]]) + biases
-            k = 10
-            _, predictions = tf.nn.top_k(res, k=k)
-            predictions = predictions.eval()
+        with tf.Session(graph=graph) as session:
+            feed_dict = {input: [word]}
+            predictions_array = session.run(predictions, feed_dict=feed_dict)
 
-        predictions_filtered = [o for o in predictions if
+        predictions_filtered = [o for o in predictions_array if
                o not in used and o not in skip_list and (len(reverse_dictionary[o]) > 1 or o == 'a' or o == 'i')]
 
         if len(predictions_filtered) <= 0:
@@ -62,4 +67,3 @@ if __name__ == "__main__":
         start_word = start_word[0]
         print(start_word)
         print create_sentence(start_word)
-
