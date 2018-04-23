@@ -147,7 +147,7 @@ def _create_sentence(output):
         start_word = start_word.split()
         if len(start_word) >= 2 and start_word[-1] == '...':
             start_word = start_word[-2]
-        elif start_word[-1].endswith('...'):
+        elif len(start_word) >= 1 and start_word[-1].endswith('...'):
             start_word = start_word[-1][:-3]
         else:
             return
