@@ -11,6 +11,7 @@ import skipgram
 import cbow
 import random
 import create_sentence
+import classify_digits
 
 BOT_ID = "U561US9MJ"
 
@@ -135,10 +136,11 @@ def react2(output):
 def change_sentence(output):
     if output['user'] != BOT_ID:
         response = None
-        new_sentence, num_replaced_words = skipgram.replace_words(output['text'])
-        if num_replaced_words >= 2 and random.randint(1, 10) == 6:
-            response = "Or as I would put it: `{}`".format(new_sentence)
-        else:
+        # new_sentence, num_replaced_words = skipgram.replace_words(output['text'])
+        # if num_replaced_words >= 2 and random.randint(1, 10) == 6:
+            # response = "Or as I would put it: `{}`".format(new_sentence)
+        # else:
+        if True:
             new_sentence, num_replaced_words = cbow.replace_words(output['text'])
             if num_replaced_words >= 1 and random.randint(1, 10) == 6:
                 response = "Did you mean `{}` ?".format(new_sentence)
@@ -161,6 +163,13 @@ def _create_sentence(output):
             slack_client.api_call("chat.postMessage", channel=output['channel'], text=response, as_user=True)
 
 
+def _classify_digit(output):
+    digit = classify_digits.classify_digit(output['file']['url_private'])
+    if digit is not None:
+        slack_client.api_call("chat.postMessage", channel=output['channel'],
+                              text="That looks like the number {} to me!".format(digit), as_user=True)
+
+
 def parse_slack_output(slack_rtm_output):
     """
         The Slack Real Time Messaging API is an events firehose.
@@ -181,6 +190,8 @@ def parse_slack_output(slack_rtm_output):
                 react2(output)
                 change_sentence(output)
                 _create_sentence(output)
+            if output and 'file' in output and 'url_private' in output['file']:
+                _classify_digit(output)
     return None, None, None
 
 if __name__ == "__main__":
