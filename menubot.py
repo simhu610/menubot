@@ -80,7 +80,7 @@ def get_response(command, restaurant=None):
 
     return response
 
-def handle_command(command, channel):
+def handle_command(command, channel, thread_ts):
     """
         Receives commands directed at the bot and determines if they
         are valid commands. If so, then acts on the commands. If not,
@@ -89,8 +89,13 @@ def handle_command(command, channel):
 
     response = get_response(command)
 
-    slack_client.api_call("chat.postMessage", channel=channel,
-                          text=response, as_user=True)
+    if thread_ts is not None:
+        slack_client.api_call("chat.postMessage", channel=channel,
+                              text=response, as_user=True, thread_ts=thread_ts)
+    else:
+        slack_client.api_call("chat.postMessage", channel=channel,
+                              text=response, as_user=True)
+
 
 def score(w1, w2):
     if len(w1) == 0:
@@ -167,14 +172,16 @@ def parse_slack_output(slack_rtm_output):
         for output in output_list:
             if output and 'text' in output and AT_BOT in output['text']:
                 # return text after the @ mention, whitespace removed
-                return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel']
+                thread_ts = None
+                if 'thread_ts' in output:
+                    thread_ts = output['thread_ts']
+                return output['text'].split(AT_BOT)[1].strip().lower(), output['channel'], thread_ts
             if output and 'text' in output:
                 react(output)
                 react2(output)
                 change_sentence(output)
                 _create_sentence(output)
-    return None, None
+    return None, None, None
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
@@ -192,13 +199,13 @@ if __name__ == "__main__":
                     print("Connection failed. Invalid Slack token or bot ID?")
                     break
             try:
-                command, channel = parse_slack_output(slack_rtm_output)
+                command, channel, thread_ts = parse_slack_output(slack_rtm_output)
             except:
                 print "Unexpected error in parse_slack_output"
                 import traceback
                 traceback.print_exc()
             if command and channel:
-                handle_command(command, channel)
+                handle_command(command, channel, thread_ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
