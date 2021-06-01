@@ -34,6 +34,6 @@ subprocess32==3.2.7
 tensorboard==1.6.0
 tensorflow==1.6.0
 termcolor==1.1.0
-urllib3==1.23
+urllib3==1.26.5
 websocket-client==0.44.0
 Werkzeug==0.14.1
